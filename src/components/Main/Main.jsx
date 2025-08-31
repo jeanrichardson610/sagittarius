@@ -10,6 +10,20 @@ const Main = ({ setRecentPrompts }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const stripMarkdown = (text) => {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/__(.*?)__/g, "$1")
+      .replace(/_(.*?)_/g, "$1");
+  };
+
+  const formatResponse = (text) => {
+    const cleanText = stripMarkdown(text);
+    // Truncate to 600 characters
+    return cleanText.length > 600 ? cleanText.slice(0, 600) + "..." : cleanText;
+  };
+
   const handleSend = async () => {
     if (!input.trim()) return;
 
@@ -28,9 +42,10 @@ const Main = ({ setRecentPrompts }) => {
 
     // Send prompt to AI
     const response = await sendPrompt(input);
+    const truncatedResponse = formatResponse(response);
 
     setLoading(false);
-    setMessages(prev => [...prev, { type: "ai", text: response }]);
+    setMessages(prev => [...prev, { type: "ai", text: truncatedResponse }]);
   };
 
   const handleClearChat = () => {
@@ -49,9 +64,7 @@ const Main = ({ setRecentPrompts }) => {
         {!isCollapsed && (
           <>
             <div className="greet">
-              <p>
-                <span>Hello, User.</span>
-              </p>
+              <p><span>Hello, User.</span></p>
               <p>What would you like to learn today?</p>
             </div>
 
@@ -76,7 +89,6 @@ const Main = ({ setRecentPrompts }) => {
           </>
         )}
 
-        {/* Clear Chat button */}
         {messages.length > 0 && (
           <div className="clear-chat-wrapper">
             <button className="clear-chat-btn" onClick={handleClearChat}>
@@ -85,21 +97,20 @@ const Main = ({ setRecentPrompts }) => {
           </div>
         )}
 
-        {/* Chat messages */}
         <div className="chat-container">
           {messages.map((msg, index) => (
-            <div
-              key={index}
-              className={`chat-message ${msg.type === "ai" ? "ai" : "user"}`}
-            >
+            <div key={index} className={`chat-message ${msg.type === "ai" ? "ai" : "user"}`}>
               {msg.type === "ai" && (
                 <img src={assets.user_icon} alt="AI" className="ai-icon" />
               )}
-              <div className="chat-text">{msg.text}</div>
+              <div className="chat-text">
+                {msg.text.split("\n").map((line, i) => (
+                  <span key={i}>{line}<br /></span>
+                ))}
+              </div>
             </div>
           ))}
 
-          {/* Loading message */}
           {loading && (
             <div className="chat-message ai">
               <img src={assets.user_icon} alt="AI" className="ai-icon" />
@@ -112,7 +123,6 @@ const Main = ({ setRecentPrompts }) => {
           )}
         </div>
 
-        {/* Input section */}
         <div className="main-bottom">
           <div className="search-box">
             <input
